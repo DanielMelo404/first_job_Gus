@@ -71,31 +71,41 @@ def click_screen_point(x: int, y: int, delay: float = 0.5) -> None:
 
 
 # %%
-def play_movie_on_screen(coordinate_x:int, coordinate_y:int) -> None:
+def play_movie_on_screen(film_number:int) -> None:
     """
     Simulates a mouse click on the screen at the given coordinates to play the movie.
     For using this tool you must be sure that you are already on the Netflix website and you already scrolled
 
     Parameters:
     ----------
-    coordinates : tuple
-        A tuple containing the (x, y) screen coordinates where the movie is located.
+    film_number : tuple
+        A number from 1 to 10 corresponding to the position of the film in netflix from the 1st position to the 10th position.
 
     Returns:
     -------
     String
     """
 
-    print("------------ clicking on the movie --------------: y coordinate", coordinate_y)
+    print("------------ clicking on the movie --------------")
 
-    click_screen_point(577,coordinate_y)
+    coordinate_y={1:183,
+                    2:267,
+                    3:352,
+                    4:436,
+                    5:521,
+                    6:605,
+                    7:690,
+                    8:774,
+                    9:859,
+                    10:943}
+
+    click_screen_point(577, coordinate_y[film_number])
 
     try:
         return f"Clicking on movie to paly it at sepcified coordinates"
     except Exception as e:
         return f"Error while trying to play the movie: {str(e)}"
 
-# %%
 
 
 def drag_scrollbar(start_pos, pixels, steps=30, delay=0.01):
@@ -121,12 +131,12 @@ def drag_scrollbar(start_pos, pixels, steps=30, delay=0.01):
 
 
 def go_to_movies_section()->dict:
+
     """
     Scrolls the website to the section of the top 10 movies to the exact place needed by the tool look_for_movie to look for the movie. 
     
     Returns:
         Dict indicating success or error
-
     """
 
     print("------------- Tool go_to_movies_section is being called --------------")
@@ -142,23 +152,6 @@ def go_to_movies_section()->dict:
     return {'status':'success',"report":'The movie is now being played'}
 
 
-# def pronunciation_similarity(sentence1, sentence2, language='en-us'):
-#     # Get phoneme representation of both sentences
-#     phonemes1 = phonemize(sentence1, language=language, backend='espeak', strip=True, preserve_punctuation=True)
-#     phonemes2 = phonemize(sentence2, language=language, backend='espeak', strip=True, preserve_punctuation=True)
-
-#     # Calculate Levenshtein distance
-#     distance = Levenshtein.distance(phonemes1, phonemes2)
-#     max_len = max(len(phonemes1), len(phonemes2))
-
-#     # Return similarity score (1 = identical, 0 = completely different)
-#     similarity = 1 - (distance / max_len) if max_len != 0 else 1.0
-#     return round(similarity, 3)
-
-# # 🔍 Example usage:
-# print(pronunciation_similarity("write code", "right coat"))  # e.g., 0.75+
-
-
 def pronunciation_similarity(sentence1, sentence2):
     """
     Returns a float between 0 and 1 indicating the similarity between two sentences.
@@ -168,22 +161,73 @@ def pronunciation_similarity(sentence1, sentence2):
     sentence1 = sentence1.lower()
     sentence2 = sentence2.lower()
     
-    # Create a SequenceMatcher object
     matcher = difflib.SequenceMatcher(None, sentence1, sentence2)
     
     # Return the similarity ratio
     return matcher.ratio()
 
-similarity_score = pronunciation_similarity("write code", "right coat")
-print(f"Similarity score: {similarity_score:.2f}")
 
 
-def look_for_movie(chosen_movie: str):
+def look_for_movie_and_find_real_movie(chosen_movie: str):
 
     """
-    This tool must be called only when the browser window is maximized.
-    Accesses the top 10 movies scrolling down the websites and reads the title of the top 10 movies.
-    Then finds the movie that is the most similar to the chosen_movie argument and returns it
+    This tool must be called only when the browser window is maximized and you have already scrolled.
+    Reads the title of the top 10 movies.
+    This tool will also find the closest match from the list of movies to the chosen_movie. THE MOVIE RETURNED BY THIS TOOL IS THE ONE YOU HAVE TO MENTION TO THE USER.
+    
+    Args:
+        Movie chosen by the person (str)
+    Returns:
+        Dict with the movie chosen by the person and the position in the top 10 where the movie is
+    """
+
+    print("------------- Tool play_movie is being called --------------")
+
+    chosen_movie = chosen_movie.lower().replace('  ',' ')
+    screenshot = pyautogui.screenshot(region=(560, 164, 500, 800))
+    # text = pytesseract.image_to_string(screenshot)
+    screenshot.save("partial_capture.png")
+    reader = easyocr.Reader(['en'])
+    results = reader.readtext('partial_capture.png')
+    coordenadas_peliculas={}
+    xi = 577
+    yi = 183
+
+    # 660 644
+    print("MOVIE HEARD: ",chosen_movie)
+
+    for i, film in enumerate(results):
+        film_corrected = film[1].lower().replace('  ',' ').replace('_'," ")
+        coordenadas_peliculas[film_corrected]=(xi,yi+int(np.floor(i*84.5)))
+
+    actual_chosen_movie = ''
+    max_similarity = 0
+    similaridad_peliculas = {}
+    index=0
+
+    for i, film in  enumerate(coordenadas_peliculas):
+        similaridad_peliculas[film] = pronunciation_similarity(chosen_movie, film)
+        if similaridad_peliculas[film] > max_similarity:
+            max_similarity = similaridad_peliculas[film]
+            actual_chosen_movie = film
+            index= i
+
+    print(coordenadas_peliculas)
+    if actual_chosen_movie not in coordenadas_peliculas:
+        print("FILM NOT FOUND")
+        return {'status':'error',"report":'The movie you said is not among the top 10 in netflix, the movie wont be played, ask for a new movie'}
+    else:
+        print("FILM FOUND ",actual_chosen_movie)
+        print(f'The movie that the user said is {actual_chosen_movie} at position {index} on the top 10 netflix movies')
+        return {"movie":actual_chosen_movie, "Position on the top 10 of movies in netflix":index}
+    
+
+def look_for_movie_and_play_it(chosen_movie: str):
+
+    """
+    This tool must be called only when the browser window is maximized and you have already scrolled.
+
+    This tool will play the chosen movie.
     
     Args:
         Movie chosen by the person (str)
@@ -213,12 +257,14 @@ def look_for_movie(chosen_movie: str):
     actual_chosen_movie = ''
     max_similarity = 0
     similaridad_peliculas = {}
+    index=0
 
-    for film in  coordenadas_peliculas:
+    for i, film in  enumerate(coordenadas_peliculas):
         similaridad_peliculas[film] = pronunciation_similarity(chosen_movie, film)
         if similaridad_peliculas[film] > max_similarity:
             max_similarity = similaridad_peliculas[film]
             actual_chosen_movie = film
+            index= i
 
     print(coordenadas_peliculas)
     if actual_chosen_movie not in coordenadas_peliculas:
@@ -226,15 +272,8 @@ def look_for_movie(chosen_movie: str):
         return {'status':'error',"report":'The movie you said is not among the top 10 in netflix, the movie wont be played, ask for a new movie'}
     else:
         print("FILM FOUND ",actual_chosen_movie)
-        print()
-        return {'status':'success',"report":f'The movie that the user could be {actual_chosen_movie} at coordinates x{coordenadas_peliculas[actual_chosen_movie][0]} and y {coordenadas_peliculas[actual_chosen_movie][1]}'}
-
-
-
-
-
-# %%
-# --- IMPORTANT: Replace placeholders with your real API keys ---
+        print(f'The movie that the user said is {actual_chosen_movie} at position {index} on the top 10 netflix movies')
+        return {"status":"successs", "report":"movie clicked successfully"}
 
 # Gemini API Key (Get from Google AI Studio: https://aistudio.google.com/app/apikey)
 os.environ["GOOGLE_API_KEY"] = "AIzaSyAJGLkqBvCBAACD6Mb6HWfJFYZ6L6vti8M" # <--- REPLACE
@@ -257,25 +296,15 @@ os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "False"
 
 
 # @markdown **Security Note:** It's best practice to manage API keys securely (e.g., using Colab Secrets or environment variables) rather than hardcoding them directly in the notebook. Replace the placeholder strings above.
-
-# %%
-
-
-# %%
-
-
-# %%
 import pyautogui
-
-
-
-
-# %%
 import time
 
 description = """"
 No body is controlling the computer besides you.
 """
+
+
+
 
 def click_browser()-> dict:
     """" 
@@ -283,18 +312,13 @@ def click_browser()-> dict:
     This tool allows you to click on the browser icon in the windows screen toolbar. You can assume the browser window starts closed.
     With one click it will open a new window. In the case the window is currently minimized, a click will maximize the window, with another click it will get minimized again.
 
-    Returns: A dictionary showing whether the click was actually made or
-
-      """
+    Returns: A dictionary showing whether the click was actually made 
+    """
     print("----------------------- Browser Click tool called ---------------------")
     x = 150
     y = 1075
     pyautogui.hotkey('ctrl', 't')
-    # click_screen_point(x,y)
-
     return {"status":"success","report":"the browser has been clicked"}
-
-# %%
 
 def go_to_netflix() -> dict:
     """
@@ -318,27 +342,26 @@ def go_to_netflix() -> dict:
     except Exception as e:
         return {'status': 'error', 'report': f'Failed to access website: {str(e)}'}
 
-# write
-# time.sleep(2)
-# go_to_netflix()
-
-# %%
 MODEL_GEMINI_2_0_FLASH = "gemini-2.0-flash"
 root_agent = Agent(
     name="movies_agent",
     model="gemini-2.0-flash-exp",
     description = "Helps the user control the pc in order to achieve the end goal, which is play one of netflix top 10 movies",
     instruction=  
-    """Your goal is to help the user play one of the top 10 movies of netflix. The one that he chooses. 
-    You are goin to be controlling directly the computer, no one else will be making any action and you have to assume the browser window begins minimized, 
+    """
+    Your goal is to help the user play one of the top 10 movies of netflix. The one that he chooses. 
+    You are going to be controlling directly the computer, no one else will be making any action and you have to assume the browser window begins minimized, 
     so you have to open it first by clicking on the browser icon with the tool click_browse
-    Use the tool click_browser when you neeed to click the browser icon
-    Use the tool go_to_movies_section when you neeed to scroll the screen right to the point required by go_to_netflix tool in order to do its job
-    Use the tool go_to_netflix only when you are asked to go the netflix website and you know you the browser window is maximized
-    Use the tool look_for_movie when the user already told you the movie he wants to watch and you are sure you are on the netflix website and have already scrolled and you need to find the coordinates of the movie in order to play it.
-    After using look_for_movie you have to ask the user to confirm that the movie he wants to watch is the one returned by look_for_movie. If it is not, you have to use look_for_movie again with the movie that the user said.
-    Use the tool play_movie_on_screen when you have already found the coordinates to click on the movie to play it and you confirmed that is the movie the user wants to play """,
-    tools=[click_browser, go_to_movies_section,go_to_netflix, look_for_movie, play_movie_on_screen]
+    Use the tool click_browser when you need to click the browser icon
+    Use the tool go_to_netflix only when you are asked to go to the netflix website and you know the browser window is maximized.
+    Use the tool go_to_movies_section when you need to scroll the screen right to the point required by look_for_movie_and_find_real_movie tool in order to do its job.
+
+    Use the tool look_for_movie_and_find_real_movie when the user already told you the movie he wants to watch and you are sure you are on the netflix website and have already scrolled and you need to find the position of the movie in the top 10 netflix movies, from 1 to 10.
+    O-N-L-Y A-F-T-E-R USING look_for_movie_and_find_real_movie YOU WILL ASK THE USER TO CONFIRM THAT THE MOVIE HE WANTS TO WATCH IS THE ONE RETURNED BY look_for_movie_and_find_real_movie between -- signs. 
+    If it is not, you have to use look_for_movie_and_find_real_movie again with the movie that the user says and ask again.
+    Use the tool play_movie_on_screen when you have already found the coordinates to click on the movie to play it and you confirmed that is the movie the user wants to play
+    """,
+    tools=[click_browser, go_to_movies_section, go_to_netflix, look_for_movie_and_find_real_movie, play_movie_on_screen]
 )
 
 # %%
