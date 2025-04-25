@@ -28,12 +28,8 @@ import logging
 logging.basicConfig(level=logging.ERROR)
 
 print("Libraries imported.")
-
-# %%
 import pyautogui
 import time
-
-
 
 def click_screen_point(x: int, y: int, delay: float = 0.5) -> None:
     """
@@ -79,12 +75,12 @@ def play_movie_on_screen(film_number:int) -> None:
 
     Parameters:
     ----------
-    film_number : tuple
+    film_number : int
         A number from 1 to 10 corresponding to the position of the film in netflix from the 1st position to the 10th position.
 
     Returns:
     -------
-    String
+    String indicating successful execution or not
     """
 
     print("------------ clicking on the movie --------------")
@@ -122,29 +118,6 @@ def play_movie_on_screen(film_number:int) -> None:
 
 
 
-
-def drag_scrollbar(start_pos, pixels, steps=30, delay=0.01):
-    """
-    Clicks and drags the scrollbar from start_pos by a given number of pixels.
-
-    Args:
-        start_pos (tuple): (x, y) position to click the scrollbar.
-        pixels (int): Number of pixels to drag. Positive = down, Negative = up.
-        steps (int): Number of steps to make the drag smooth.
-        delay (float): Delay between each step.
-    """
-    pyautogui.moveTo(*start_pos)
-    pyautogui.mouseDown()
-
-    pyautogui.moveRel(0, pixels)
-    # step_size = pixels / steps
-    # for _ in range(steps):
-    #     pyautogui.moveRel(0, step_size)
-    #     time.sleep(delay)
-
-    pyautogui.mouseUp()
-
-
 def go_to_movies_section()->dict:
 
     """
@@ -159,29 +132,12 @@ def go_to_movies_section()->dict:
     pyautogui.moveTo(1200, 400)
     time.sleep(2)
     pyautogui.scroll(-1090)
-    # drag_scrollbar((1904,127),240)
-    # pyautogui.click(1200, 400)
     time.sleep(1)
     pyautogui.moveTo(1800, 400)
 
     return {'status':'success',"report":'The movie is now being played'}
 
-
-def pronunciation_similarity(sentence1, sentence2):
-    """
-    Returns a float between 0 and 1 indicating the similarity between two sentences.
-    1 means identical, 0 means completely different.
-    """
-    # Normalize sentences to lowercase to ensure case-insensitive comparison
-    sentence1 = sentence1.lower()
-    sentence2 = sentence2.lower()
-    
-    matcher = difflib.SequenceMatcher(None, sentence1, sentence2)
-    
-    # Return the similarity ratio
-    return matcher.ratio()
-
-
+ 
 def look_for_movie_and_play_it(position_of_film_in_top_10: int):
 
     """
@@ -193,11 +149,9 @@ def look_for_movie_and_play_it(position_of_film_in_top_10: int):
         Dict indicating success or error
     """
 
-    print("------------- Tool play_movie is being called --------------")
+    print("------------- Tool look_for_movie_and_play_it is being called --------------")
 
-    # chosen_movie = chosen_movie.lower().replace('  ',' ')
     screenshot = pyautogui.screenshot(region=(560, 164, 500, 800))
-    # text = pytesseract.image_to_string(screenshot)
     screenshot.save("partial_capture.png")
     reader = easyocr.Reader(['en'])
     results = reader.readtext('partial_capture.png')
@@ -205,7 +159,6 @@ def look_for_movie_and_play_it(position_of_film_in_top_10: int):
     xi = 577
     yi = 183
 
-    # 660 644
     print("MOVIE HEARD: ",position_of_film_in_top_10)
 
     for i, film in enumerate(results):
@@ -222,38 +175,12 @@ def look_for_movie_and_play_it(position_of_film_in_top_10: int):
 
     print("FILM FOUND ",actual_chosen_movie)
     print(f'The movie that the user said is {actual_chosen_movie} at position {position_of_film_in_top_10} on the top 10 netflix movies')
-    play_movie_on_screen(position_of_film_in_top_10)
     print("INDEX:", index)
-    return {"status":"successs", "report":"movie clicked successfully"}
-
-# Gemini API Key (Get from Google AI Studio: https://aistudio.google.com/app/apikey)
-os.environ["GOOGLE_API_KEY"] = "AIzaSyAJGLkqBvCBAACD6Mb6HWfJFYZ6L6vti8M" # <--- REPLACE
-
-# OpenAI API Key (Get from OpenAI Platform: https://platform.openai.com/api-keys)
-os.environ['OPENAI_API_KEY'] = 'YOUR_OPENAI_API_KEY' # <--- REPLACE
-
-# Anthropic API Key (Get from Anthropic Console: https://console.anthropic.com/settings/keys)
-os.environ['ANTHROPIC_API_KEY'] = 'YOUR_ANTHROPIC_API_KEY' # <--- REPLACE
-
-
-# --- Verify Keys (Optional Check) ---
-print("API Keys Set:")
-print(f"Google API Key set: {'Yes' if os.environ.get('GOOGLE_API_KEY') and os.environ['GOOGLE_API_KEY'] != 'YOUR_GOOGLE_API_KEY' else 'No (REPLACE PLACEHOLDER!)'}")
-print(f"OpenAI API Key set: {'Yes' if os.environ.get('OPENAI_API_KEY') and os.environ['OPENAI_API_KEY'] != 'YOUR_OPENAI_API_KEY' else 'No (REPLACE PLACEHOLDER!)'}")
-print(f"Anthropic API Key set: {'Yes' if os.environ.get('ANTHROPIC_API_KEY') and os.environ['ANTHROPIC_API_KEY'] != 'YOUR_ANTHROPIC_API_KEY' else 'No (REPLACE PLACEHOLDER!)'}")
-
-# Configure ADK to use API keys directly (not Vertex AI for this multi-model setup)
-os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "False"
-
-
-# @markdown **Security Note:** It's best practice to manage API keys securely (e.g., using Colab Secrets or environment variables) rather than hardcoding them directly in the notebook. Replace the placeholder strings above.
-import pyautogui
-import time
-
-description = """"
-No body is controlling the computer besides you.
-"""
-
+    try:
+        play_movie_on_screen(position_of_film_in_top_10)
+        return {"status":"successs", "report":"movie is being played successfully"}
+    except:
+        return {"status":"error", "report":"error playing the movie"}
 
 
 
@@ -269,6 +196,7 @@ def click_browser()-> dict:
     x = 150
     y = 1075
     pyautogui.hotkey('ctrl', 't')
+    click_screen_point(x,y)
     return {"status":"success","report":"the browser has been clicked"}
 
 def go_to_netflix() -> dict:
@@ -293,6 +221,29 @@ def go_to_netflix() -> dict:
     except Exception as e:
         return {'status': 'error', 'report': f'Failed to access website: {str(e)}'}
 
+# Gemini API Key (Get from Google AI Studio: https://aistudio.google.com/app/apikey)
+os.environ["GOOGLE_API_KEY"] = "AIzaSyAJGLkqBvCBAACD6Mb6HWfJFYZ6L6vti8M" # <--- REPLACE
+
+# OpenAI API Key (Get from OpenAI Platform: https://platform.openai.com/api-keys)
+os.environ['OPENAI_API_KEY'] = 'YOUR_OPENAI_API_KEY' # <--- REPLACE
+
+# Anthropic API Key (Get from Anthropic Console: https://console.anthropic.com/settings/keys)
+os.environ['ANTHROPIC_API_KEY'] = 'YOUR_ANTHROPIC_API_KEY' # <--- REPLACE
+
+
+# --- Verify Keys (Optional Check) ---
+print("API Keys Set:")
+print(f"Google API Key set: {'Yes' if os.environ.get('GOOGLE_API_KEY') and os.environ['GOOGLE_API_KEY'] != 'YOUR_GOOGLE_API_KEY' else 'No (REPLACE PLACEHOLDER!)'}")
+print(f"OpenAI API Key set: {'Yes' if os.environ.get('OPENAI_API_KEY') and os.environ['OPENAI_API_KEY'] != 'YOUR_OPENAI_API_KEY' else 'No (REPLACE PLACEHOLDER!)'}")
+print(f"Anthropic API Key set: {'Yes' if os.environ.get('ANTHROPIC_API_KEY') and os.environ['ANTHROPIC_API_KEY'] != 'YOUR_ANTHROPIC_API_KEY' else 'No (REPLACE PLACEHOLDER!)'}")
+
+# Configure ADK to use API keys directly (not Vertex AI for this multi-model setup)
+os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "False"
+
+
+# @markdown **Security Note:** It's best practice to manage API keys securely (e.g., using Colab Secrets or environment variables) rather than hardcoding them directly in the notebook. Replace the placeholder strings above.
+
+
 MODEL_GEMINI_2_0_FLASH = "gemini-2.0-flash"
 root_agent = Agent(
     name="movies_agent",
@@ -310,24 +261,3 @@ root_agent = Agent(
     """,
     tools=[click_browser, go_to_movies_section, go_to_netflix, look_for_movie_and_play_it]
 )
-
-# %%
-APP_NAME = 'watch a netflix movie app'
-SESSION_ID = 'session_1'
-USER_ID = 'user_1'
-
-# async def run_conversation():
-#     await  call_agent("hey i want to see A movie called how to make millions before grandma dies in Netflix, can you play it")
-
-
-# %%
-# # click_browser()
-# await run_conversation()
-
-# %%
-
-
-# %%
-
-
-
