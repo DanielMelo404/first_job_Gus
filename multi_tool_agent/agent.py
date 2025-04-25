@@ -33,6 +33,8 @@ print("Libraries imported.")
 import pyautogui
 import time
 
+
+
 def click_screen_point(x: int, y: int, delay: float = 0.5) -> None:
     """
     Simulates a mouse click at a specific (x, y) coordinate on the screen.
@@ -70,7 +72,6 @@ def click_screen_point(x: int, y: int, delay: float = 0.5) -> None:
     pyautogui.click()       # click once
 
 
-# %%
 def play_movie_on_screen(film_number:int) -> None:
     """
     Simulates a mouse click on the screen at the given coordinates to play the movie.
@@ -88,23 +89,37 @@ def play_movie_on_screen(film_number:int) -> None:
 
     print("------------ clicking on the movie --------------")
 
-    coordinate_y={1:183,
-                    2:267,
-                    3:352,
-                    4:436,
-                    5:521,
-                    6:605,
-                    7:690,
-                    8:774,
-                    9:859,
-                    10:943}
+    coordinate_y={1:183+23,
+                    2:267+23,
+                    3:352+23,
+                    4:436+23,
+                    5:521+23,
+                    6:605+23,
+                    7:690+23,
+                    8:774+23,
+                    9:859+23,
+                    10:943+23}
 
     click_screen_point(577, coordinate_y[film_number])
+    time.sleep(1)
+    pyautogui.scroll(-400)
+    time.sleep(1)
+    
+    location = pyautogui.locateOnScreen('play_button.png', confidence=0.8)
+
+    if location:
+        center = pyautogui.center(location)
+        pyautogui.moveTo(center)
+        pyautogui.click()
+        print("Clicked the Play button!")
+    else:
+        print("Play button not found.")
 
     try:
         return f"Clicking on movie to paly it at sepcified coordinates"
     except Exception as e:
         return f"Error while trying to play the movie: {str(e)}"
+
 
 
 
